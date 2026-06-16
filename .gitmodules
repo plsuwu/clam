@@ -1,3 +1,7 @@
 [submodule "raylib"]
 	path = raylib
-	url = https://github.com/raysan5/raylib
+    url = https://github.com/raysan5/raylib
+
+; [submodule "jam"]
+;     path = jam
+;     url = https://github.com/lcolonq/jam

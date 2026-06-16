@@ -1,4 +1,4 @@
-.ccls-cache/
+.cache/
 .direnv/
 compile_commands.json
 build/

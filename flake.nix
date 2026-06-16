@@ -36,13 +36,19 @@
         '';
     in
     {
-      devShells.x86_64-linux.default = pkgs.mkShell {
-        buildInputs = [
-          pkgs.emscripten
-          pkgs.bear
+      devShells.x86_64-linux.default =
+        pkgs.mkShell.override
+          {
+            stdenv = pkgs.llvmPackages_latest.stdenv;
+          }
+          {
+            buildInputs = [
+              pkgs.emscripten
+              pkgs.bear
+              pkgs.nodejs
 
-          buildRaylib
-        ];
-      };
+              buildRaylib
+            ];
+          };
     };
 }
