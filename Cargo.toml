@@ -1,0 +1,22 @@
+[package]
+name = "clam"
+version = "0.1.0"
+edition = "2024"
+authors = ["plsuwu"]
+license-file = "LICENSE.TXT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# [lib]
+# crate-type = ["cdylib"]
+
+[dependencies]
+bevy = { version = "0.19.0", features = ["wayland"] }
+wasm-bindgen = "0.2.126"
+
+[profile.release]
+opt-level = "z"
+panic = "abort"
+lto = true
+strip = true
+codegen-units = 1

@@ -1,54 +1,72 @@
 {
+  description = "Build a cargo project with a custom toolchain";
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    crane.url = "github:ipetkov/crane";
+    flake-utils.url = "github:numtide/flake-utils";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
-    { self, nixpkgs, ... }:
-    let
-      system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
-
-      buildRaylib =
-        let
-          clamdir = "/home/please/src/clam";
-          emFlags = "-Os -Wall -DPLATFORM_WEB";
-        in
-        pkgs.writeShellScriptBin "build-raylib" ''
-          #!/usr/bin/env bash
-
-          cd ${clamdir}/raylib/src/
-
-          ${pkgs.emscripten}/bin/emcc -c rcore.c ${emFlags} -DGRAPHICS_API_OPENGL_ES2
-          ${pkgs.emscripten}/bin/emcc -c rshapes.c ${emFlags} -DGRAPHICS_API_OPENGL_ES2
-          ${pkgs.emscripten}/bin/emcc -c rtextures.c ${emFlags} -DGRAPHICS_API_OPENGL_ES2
-          ${pkgs.emscripten}/bin/emcc -c rtext.c ${emFlags} -DGRAPHICS_API_OPENGL_ES2
-          ${pkgs.emscripten}/bin/emcc -c rmodels.c ${emFlags} -DGRAPHICS_API_OPENGL_ES2
-          ${pkgs.emscripten}/bin/emcc -c raudio.c ${emFlags}
-
-          ${pkgs.emscripten}/bin/emar rcs libraylib.a \
-              rcore.o      \
-              rshapes.o    \
-              rtextures.o  \
-              rtext.o      \
-              rmodels.o    \
-              raudio.o
-        '';
-    in
     {
-      devShells.x86_64-linux.default =
-        pkgs.mkShell.override
-          {
-            stdenv = pkgs.llvmPackages_latest.stdenv;
-          }
-          {
-            buildInputs = [
-              pkgs.emscripten
-              pkgs.bear
-              pkgs.nodejs
+      self,
+      nixpkgs,
+      crane,
+      flake-utils,
+      rust-overlay,
+      ...
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ (import rust-overlay) ];
+        };
 
-              buildRaylib
-            ];
-          };
-    };
+        craneLib = (crane.mkLib pkgs).overrideToolchain (
+          p:
+          p.rust-bin.stable.latest.default.override {
+            targets = [ "wasm32-unknown-unknown" ];
+          }
+        );
+
+      in
+      {
+        devShells.default = craneLib.devShell {
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (
+            with pkgs;
+            [
+              vulkan-loader
+              libx11
+              libx11
+              libxi
+              libxkbcommon
+              wayland
+            ]
+          );
+
+          packages = with pkgs; [
+            pkg-config
+            wasm-pack
+            alsa-lib
+
+            vulkan-loader
+            vulkan-tools
+
+            libx11
+            libx11
+            libxi
+            libxkbcommon
+            wayland
+
+            libudev-zero
+          ];
+        };
+      }
+    );
 }
